@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotAcceptableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Patient } from './schemas/patient.schema';
 import { CreatePatientDto, UpdatePatientDto } from './dto/create-patient.dto';
 import { Model, ObjectId } from 'mongoose';
-import { ReturningPatientDto } from './dto/returning-patient.dto';
 import { CreatePrescriptionDto } from 'src/prescription/dto/create-prescription.dto';
 import { Prescription } from 'src/prescription/schemas/prescription.schema';
+
+import { UnauthorizedException, NotFoundError } from '../exceptions/exceptions';
+
 
 @Injectable()
 export class PatientService {
@@ -39,8 +41,6 @@ export class PatientService {
           .limit(limit)
           .exec();
     
-          console.log('Paginate Querysss:', query);
-
         const rangeStart = skip + 1;
         const rangeEnd = Math.min(skip + limit, totalItems);
     
@@ -70,7 +70,7 @@ export class PatientService {
     }
     
     async findOne(id: string): Promise<Patient> {
-        return await this.patientModel.findById(id).exec();
+        return await this.patientModel.findById(id).populate('assignedDoctor assignedNurse assignedPharmacist assignedMLSSession', 'name').exec();
     }
     
     async remove(id: string): Promise<Patient> {
@@ -91,22 +91,43 @@ export class PatientService {
             return this.paginate(filter, page, limit);
           }
           
+    async findAllNames(): Promise<Patient[]>{
+        return await this.patientModel.find().sort({ name: 1 }).select('name').exec();
+    }
     
-    async registerReturningPatient(returningPatientDto: ReturningPatientDto, patientId: string): Promise<Patient> {
-        const returningPatient = await this.patientModel.findByIdAndUpdate(patientId, 
-            {
-                ...returningPatientDto,
-                admittedStatus: {in: true}
-            }, { new: true });
-        
-        if (!returningPatient) {
+    async registerReturningPatient(returningPatientDto: UpdatePatientDto, patientId: string): Promise<any> {
+        const patient = await this.patientModel.findById(patientId).exec();
+    
+        // Check if patient exists
+        if (!patient) {
             throw new Error(`No patient found with ID: ${patientId}`);
         }
-        return returningPatient;
+    
+        // Safely check the admittedStatus
+        if (patient.admittedStatus[0]?.in === true) {
+            return { message: "Patient already admitted", patient };
+        }
+    
+        // Update the patient record
+        const returningPatient = await this.patientModel.findByIdAndUpdate(
+            patientId,
+            {
+                ...returningPatientDto,
+                admittedStatus: { in: true }
+            },
+            { new: true }
+        );
+    
+        if (!returningPatient) {
+            throw new Error(`Failed to update patient with ID: ${patientId}`);
+        }
+    
+        return { message: "Patient admitted successfully", returningPatient };
     }
+    
 
     async updatePatient(patientId: any, patientDto: UpdatePatientDto): Promise<{message, patient}>{
-        const updatedPatient = await this.patientModel.findByIdAndUpdate(patientId, patientDto).exec()
+        const updatedPatient = await this.patientModel.findByIdAndUpdate(patientId, {...patientDto}, {new: true}).exec()
 
         if (!updatedPatient) {
             throw new Error(`No patient found with ID: ${patientId}`);
@@ -117,68 +138,169 @@ export class PatientService {
         }
     }
 
-    async assignDoctor(patientId: string, doctorId: string): Promise<Patient> {
-        return await this.patientModel.findByIdAndUpdate(
-          patientId,
-          { assignedDoctor: doctorId, currentLocation: 'doctor' },
-          { new: true },
-        );
-      }
+    async assignDoctor(patientId: string, doctorId: string, additionalRemarks: string): Promise<{message, updatedPatient}> {  
+        const patient = await this.patientModel.findById(patientId).exec();
+        this.isPatientAdmitted(patient)
+        const updatedPatient = await this.patientModel.updateOne(
+            { _id: patientId },
+            [
+              {
+                $set: {
+                    assignedDoctor: doctorId, currentLocation: 'doctor',
+                  additionalRemarks: {
+                    $concat: [patient.additionalRemarks, " ", "\nNurse: " ,additionalRemarks],
+                  },
+                },
+              },
+            ]
+          );
+        return {message: "Patient updated successfully", updatedPatient: updatedPatient}
+    }
     
-      async afterLab(patientId: string, doctorId: string, labResult: string): Promise<Patient> {
-        return await this.patientModel.findByIdAndUpdate(
-          patientId,
-          { assignedDoctor: doctorId, currentLocation: 'doctor', additionalRemarks: labResult },
-          { new: true },
-        );
-      }
+      async afterLab(patientId: string, doctorId: string, labResult: string): Promise<{message, updatedPatient}> {
+        const patient = await this.patientModel.findById(patientId).exec();
+        
+        
+        const updatedPatient = await this.patientModel.updateOne(
+            { _id: patientId },
+            [
+              {
+                $set: {
+                  assignedDoctor: doctorId, currentLocation: 'doctor',
+                  additionalRemarks: {
+                    $concat: [patient.additionalRemarks, " ", "\Lab-result: " ,labResult],
+                  },
+                },
+              },
+            ]
+          );
+        return {message: "Patient updated successfully", updatedPatient: updatedPatient}
+    }
     
-      async assignNurse(patientId: string, nurseId: string): Promise<Patient> {
-        return await this.patientModel.findByIdAndUpdate(
-          patientId,
-          { assignedNurse: nurseId, currentLocation: 'nurse' },
-          { new: true },
-        );
-      }
-
-    async sendToLab(patientId: string, mlsId: string): Promise<Patient> {
-        return await this.patientModel.findByIdAndUpdate(
-            patientId,
-            { assignedMLSSession: mlsId, currentLocation: 'lab' },
-            { new: true },
-        );
+    async assignNurse(patientId: string, nurseId: string, additionalRemarks: string): Promise<{message, updatedPatient}> {
+        const patient = await this.patientModel.findById(patientId).exec();
+        this.isPatientAdmitted(patient);
+        
+        
+        const updatedPatient = await this.patientModel.updateOne(
+            { _id: patientId },
+            [
+              {
+                $set: {
+                    assignedNurse: nurseId, 
+                    currentLocation: 'nurse',
+                  additionalRemarks: {
+                    $concat: [patient.additionalRemarks, " ", "\nDoctor: " ,additionalRemarks],
+                  },
+                },
+              },
+            ]
+          );
+        return {message: "Patient updated successfully", updatedPatient: updatedPatient}
+    }
+    
+    async sendToLab(patientId: string, mlsId: string, additionalRemarks: string): Promise<{message, updatedPatient}> {
+        const patient = await this.patientModel.findById(patientId).exec();
+        this.isPatientAdmitted(patient);
+        
+        const updatedPatient = await this.patientModel.updateOne(
+            { _id: patientId },
+            [
+              {
+                $set: {
+                  assignedMLSSession: mlsId,
+                  currentLocation: 'lab',
+                  additionalRemarks: {
+                    $concat: [patient.additionalRemarks, " ", "\nDoctor: " ,additionalRemarks],
+                  },
+                },
+              },
+            ]
+          );
+        return {message: "Patient updated successfully", updatedPatient: updatedPatient}
     }
     
     async prescribeMedication(
         patientId: string,
         pharmacistId: string,
         prescriptionDto: CreatePrescriptionDto,
-        ): Promise<Patient> {
+    ): Promise<{message, updatedPatient}> {
+        // console.log(prescriptionDto)
+         
+        // Create and save the new prescription
+        
+        // Fetch the current patient data
+        const patient = await this.patientModel.findById(patientId).exec();
+        this.isPatientAdmitted(patient);
         const prescription = new this.PrescriptionModel(prescriptionDto);
         await prescription.save();
+
     
-    return await this.patientModel.findByIdAndUpdate(
-        patientId,
-        { assignedPharmacist: pharmacistId, 
-        currentLocation: 'pharmacy' },
-        { new: true },
-    );
-    }
-      
-    async discharge(patientId: string): Promise<Patient> {
+        // Update the patient's data with the new prescription and history
         const updatedPatient = await this.patientModel.findByIdAndUpdate(
-            patientId, 
-            { admittedStatus: { in: false } }, // Update the admittedStatus field
-            { new: true } // Return the updated document
-        );
+            patientId,
+            {
+                $set: {
+                    assignedPharmacist: pharmacistId,
+                    currentLocation: 'pharmacy',
+                },
+                currPrescription: {
+                    date: new Date(),
+                    diagnosis: patient.additionalRemarks,
+                    doctor: patient.assignedDoctor,
+                    prescription: prescription._id, // Reference to the prescription
+                },
+                
+            },
+            { new: true },
+        ).exec();
+
+        return {message: "Prescription added successfully", updatedPatient}
+    }
     
-        if (!updatedPatient) {
-            throw new Error(`No patient found with ID: ${patientId}`);
+      
+    async discharge(patientId: string): Promise<any> {
+        const patient = await this.patientModel.findById(patientId).exec();
+
+        this.isPatientAdmitted(patient);
+        // Update the first entry in admittedStatus to mark the patient as discharged
+        patient.admittedStatus[0].in = false;
+        patient.admittedStatus[0].timeOut = new Date(); // Set the discharge time
+        patient.medicalHistory.push(patient.currPrescription);
+        // Add a new entry to admittedStatus for the next admission
+        const newStatus = {
+            in: false,
+            timeIn: null,
+            timeOut: null,
+        };
+        patient.admittedStatus.unshift(newStatus); // Add the new entry to the beginning of the array
+    
+        // Save the updated patient document
+        await patient.save();
+        
+        return {message: "Patient Discharged Successfully", patient};
+    }
+    
+    isPatientAdmitted(patient){
+
+        if (!patient) {
+            throw new NotFoundError (`Patient not found`);
         }
     
-        return updatedPatient;
-    }
+        // Check if the patient is currently admitted
+        if (!patient.admittedStatus[0]?.in) {
+            throw new NotAcceptableException ("Patient is not currently admitted");
+        }
+        // if (!patient.admittedStatus[0]?.in) {
+        //     return 
+        //       statusCode: 401,
+        //       message: "Patient is not currently admitted",
+        //     };
+        //   }
+
+        
     
+    }
   
     
       

@@ -40,6 +40,21 @@ export class Patient extends Document {
   alerts: string[]; // e.g., "Requires Surgery", "Critical Vitals"
 
   @Prop({
+    type: {
+        date: { type: Date, default: Date.now },
+        diagnosis: { type: String, required: true },
+        doctor: { type: Types.ObjectId, ref: 'User' }, // Doctor responsible
+        prescription: { type: Types.ObjectId, ref: 'Prescription' }, // Linked prescription
+      },
+  })
+  currPrescription: {
+    date: Date;
+    diagnosis: string;
+    doctor: Types.ObjectId;
+    prescription: Types.ObjectId;
+  };
+
+  @Prop({
     type: [
       {
         date: { type: Date, default: Date.now },
@@ -63,11 +78,11 @@ export class Patient extends Document {
     timeOut: {type: Date, default: null}
   }]
 })
-  admittedStatus: {
+  admittedStatus: [{
     in: Boolean;
     timeIn: Date;
     timeOut: Date;
-  }
+  }]
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   assignedDoctor: Types.ObjectId; // The doctor currently responsible

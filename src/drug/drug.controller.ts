@@ -41,7 +41,7 @@ export class DrugController {
     }
 
     @Get()
-    async getAllDrugs(@Query() query : {page: number; limit: number}){
+    async getAllDrugs(@Query() query? : {page?: number; limit?: number}){
         const {page, limit} = query;
         // console.log(page, limit);
         

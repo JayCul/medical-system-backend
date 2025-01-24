@@ -1,11 +1,10 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, BadRequestException, Put } from '@nestjs/common';
-import { CreatePatientDto } from './dto/create-patient.dto';
+import { CreatePatientDto, UpdatePatientDto } from './dto/create-patient.dto';
 import { PatientService } from './patient.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Roles } from 'src/auth/roles.enum';
 import { RequireRoles } from 'src/decorator/roles.decorator';
-import { ReturningPatientDto } from './dto/returning-patient.dto';
 import { CreatePrescriptionDto } from 'src/prescription/dto/create-prescription.dto';
 import { ObjectId } from 'typeorm';
 
@@ -22,22 +21,24 @@ export class PatientController {
     }
 
     @Get('search-by-name')
-    async searchName(@Query() query : {name: string; page: number; limit: number}) {
+    async searchName(@Query() query : {name: string; page?: number; limit?: number}) {
       const {name, page, limit} = query;
 
-        console.log('Query parameters:', { name, page, limit });
-        return this.patientService.findPatientByName(name, page || 1, limit || 10);
+        return this.patientService.findPatientByName(name, page, limit);
     }
-    
+  
+    @Get('list-names')
+    async listNames(){
+      return this.patientService.findAllNames()
+    }
+  
   @Post('new')
   async create(@Body() createPatientDto: CreatePatientDto) {
-    console.log(createPatientDto)
     return this.patientService.create(createPatientDto);
   }
 
   @Get(':id')
     async findOne(@Param('id') id: string) {
-      console.log(id)
       return this.patientService.findOne(id);
     }
   
@@ -48,23 +49,27 @@ export class PatientController {
 
     
     @Post(':patientId/register-returning')
-  async registerReturningPatient(@Body() returningPatientDto: ReturningPatientDto, @Param('patientId') patientId: string){
+  async registerReturningPatient(@Body() returningPatientDto: UpdatePatientDto, @Param('patientId') patientId: string){
     return this.patientService.registerReturningPatient(returningPatientDto, patientId);
   }
   
   @Post(':patientId/to-doctor')
-  async assignDoctor(@Body() doctorId: string, @Param('patientId') patientId: string ){
-    return this.patientService.assignDoctor(patientId, doctorId);
+  async assignDoctor(@Body() body: any, @Param('patientId') patientId: string ){
+    const {_id, additionalRemarks} = body
+    // console.log(body)
+    return this.patientService.assignDoctor(patientId, _id, additionalRemarks);
   }
   
   @Post(':patientId/to-nurse')
-  async assignNurse(@Body() nurseId: string, @Param('patientId') patientId: string ){
-    return this.patientService.assignNurse(patientId, nurseId);
+  async assignNurse(@Body() body: any, @Param('patientId') patientId: string ){
+    const {_id, additionalRemarks} = body
+    return this.patientService.assignNurse(patientId, _id, additionalRemarks);
   }
   
   @Post(':patientId/to-lab')
-  async sendToLab(@Body() mlsId: string, @Param('patientId') patientId: string ){
-    return this.patientService.sendToLab(patientId, mlsId);
+  async sendToLab(@Body() body: any, @Param('patientId') patientId: string ){
+    const {_id, additionalRemarks} = body
+    return this.patientService.sendToLab(patientId, _id, additionalRemarks);
   }
 
   @Post(':patientId/after-lab')
@@ -86,7 +91,7 @@ export class PatientController {
     return this.patientService.discharge(patientId);
   }
 
-  @Put(':patientId/update')
+  @Put(':patientId')
   async update(@Param('patientId') patientId: any, @Body() patientData: any){
     return this.patientService.updatePatient(patientId, patientData)
   }

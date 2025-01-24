@@ -8,7 +8,7 @@ import { Roles } from 'src/auth/roles.enum';
 import { RequireRoles } from 'src/decorator/roles.decorator';
 import { EditUserDto } from './dto/edit-user.dto';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard) // Combine guards for efficiency
+// @UseGuards(AuthGuard('jwt'), RolesGuard) // Combine guards for efficiency
 @Controller('user')
 // @RequireRoles(Roles.Admin) // Ensure role restriction is specific to this route
 export class UserController {
@@ -52,11 +52,15 @@ export class UserController {
       // console.log(req)uuhu
       return this.userService.getCustomSettings(req.user._id);
     }
-    @Get(':id')
+    @Get('by-id/:id')
     findOne(@Param('id') id: string) {
+      console.log("hi", id)
       return this.userService.findById(id);
     }
-    
+    @Get('by-role/:role')
+    getUserByRole(@Param('role') role: string){
+      return this.userService.findUsersByRole(role)
+    }
     @Delete(':id')
     remove(@Param('id') id: string) {
       return this.userService.remove(id);

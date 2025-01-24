@@ -76,6 +76,19 @@ export class UserService {
     return this.paginate(filter, page, limit);
   }
 
+  async findUsersByRole(role: string){
+    const regex = new RegExp(role, 'i');
+    // const filter = { role: regex }; 
+    const users = await this.userModel.find({role: regex, isActive: true}).select('_id name' ).exec();
+    
+    if (!users){
+      throw new Error ("Users with role " + role + "not found");
+    }
+    
+    return users;
+
+  }
+
   async findByNameOrEmail(name: string, page: number, limit: number) {
     const regex = new RegExp(name, 'i');
     return this.paginate(
@@ -99,7 +112,7 @@ export class UserService {
   }
 
   async findById(id: string): Promise<User> {
-    const user = await this.userModel.findById(id).exec();
+    const user = await this.userModel.findById(id).select('_id name').exec();
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }

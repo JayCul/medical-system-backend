@@ -123,7 +123,7 @@ export class DrugService {
 
         }
 
-        async fetchDrugs( page: number, limit: number ){ 
+        async fetchDrugs( page?: number, limit?: number ){ 
             return this.paginate({}, page, limit);
         }
           

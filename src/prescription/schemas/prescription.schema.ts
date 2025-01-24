@@ -25,6 +25,7 @@ export class Prescription extends Document{
     @Prop({
         type: [
           {
+            // _id: {type: Types.ObjectId, ref: 'Drug'},
             drug: { type: String, required: true },
             dosage: { type: String, required: true }, // e.g., "50mg"
             frequency: { type: String, required: true }, // e.g., "Twice a day"
