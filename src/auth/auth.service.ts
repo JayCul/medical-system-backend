@@ -6,15 +6,70 @@ import * as bcrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { User } from 'src/user/schemas/user.schema';
 import { Console } from 'console';
+import { ConfigService } from '@nestjs/config';
+
+interface RedisConfig {
+  PORT: number;
+  HOST: string;
+  USERNAME: string;
+  PASSWORD: string;
+}
 
 @Injectable()
 export class AuthService {
-  private redisClient = new Redis();
+//   REDIS_PORT = 14192
+// REDIS_HOST = "redis-14192.c14.us-east-1-3.ec2.redns.redis-cloud.com"
+// REDIS_USERNAME = "default"
+// REDIS_PASSWORD = "ePzejxgjvAfdLCcALB6jhoK6BxsC8EC6"
+  // private redisClient = new Redis();
 
+  // redisConfig = this.configService.get<RedisConfig>('REDIS');
+  private redisClient = new Redis({ 
+    port: this.getRedisConfig().PORT, // Redis port
+    host: this.getRedisConfig().HOST, // Redis host
+    username: this.getRedisConfig().USERNAME, // needs Redis >= 6
+    password: this.getRedisConfig().PASSWORD,
+    db: 0, // Defaults to 0
+  });
+  
+  // private redisClient = new Redis({ 
+  //   port: this.REDIS_PORT, // Redis port
+  //   host: this.REDIS_HOST, // Redis host
+  //   username: this.REDIS_USERNAME, // needs Redis >= 6
+  //   password: this.REDIS_PASSWORD,
+  //   db: 0, // Defaults to 0
+  // });
+  // private redisClient = new Redis("redis://default:*******@redis-14192.c14.us-east-1-3.ec2.redns.redis-cloud.com:14192");
+
+  getRedisConfig(): RedisConfig {
+    const keys = {
+    //   port: parseInt(process.env.REDIS_PORT), // Redis port
+    //   host: process.env.REDIS_HOST, // Redis host
+    //   username: process.env.REDIS_USERNAME, // needs Redis >= 6
+    //   password: process.env.REDIS_PASSWORD,
+    // db: 0, // Defaults to 0
+      PORT: parseInt(this.configService.get<string>('redisDB.port')), 
+      HOST: this.configService.get<string>('redisDB.host'),
+      USERNAME: this.configService.get<string>('redisDB.username'),
+      PASSWORD: this.configService.get<string>('redisDB.password'),
+
+    }
+    return keys;
+  }
+  private redisConfig: RedisConfig; 
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // this.redisClient.connect();
+    try {
+      this.redisConfig = this.getRedisConfig();
+    } catch (error) {
+      console.error('Failed to get Redis config:', error);
+      // Handle the error appropriately
+    }
+  }
 
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.userService.findByUsername(username);

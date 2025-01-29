@@ -23,8 +23,12 @@ export class DashboardService {
         return this.getNurseStats(user._id);
       case 'pharmacist':
         return this.getPharmacistStats(user._id);
+      case 'medLabScientist':
+        return this.getMedLabStats(user._id);
       case 'admin':
         return this.getAdminStats();
+      case 'user':
+        return "User doesn't have access";
       default:
         throw new Error('Role not supported');
     }
@@ -41,6 +45,13 @@ export class DashboardService {
     };
   }
 
+  private async getMedLabStats(Id: ObjectId) {
+    const assignedPatients = await this.patientModel.countDocuments({ assignedMLSSession: Id });
+    // const criticalPatients = await this.patientModel.countDocuments({ alerts: 'Critical Vitals' });
+    return {
+      assignedPatients,
+    };
+  }
   private async getNurseStats(nurseId: ObjectId) {
     const assignedPatients = await this.patientModel.countDocuments({ nurseAssigned: nurseId });
     const criticalPatients = await this.patientModel.countDocuments({ alerts: 'Critical Vitals' });
@@ -100,7 +111,33 @@ export class DashboardService {
 
       // 2. Health Status Breakdown
       this.patientModel.aggregate([
-        { $group: { _id: '$healthStatus', count: { $sum: 1 } } },
+        { 
+          $group: { 
+            _id: '$healthStatus', 
+            count: { $sum: 1 } 
+          } 
+        },
+        { 
+          $addFields: { 
+            order: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ["$_id", "Critical"] }, then: 1 },
+                  { case: { $eq: ["$_id", "Unstable"] }, then: 2 },
+                  { case: { $eq: ["$_id", "Recovered"] }, then: 3 },
+                  { case: { $eq: ["$_id", "Stable"] }, then: 4 }
+                ],
+                default: 99 // Any unlisted status goes to the bottom
+              }
+            }
+          }
+        },
+        { 
+          $sort: { order: 1 }  // Sort by the custom order field
+        },
+        { 
+          $project: { order: 0 }  // Remove the order field from the final output
+        }
       ]),
 
       // 3. Patient Assignments to Medical Staff

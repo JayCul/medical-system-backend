@@ -7,29 +7,36 @@ export class PrescriptionController {
   constructor(private readonly prescriptionService: PrescriptionService) {}
 
   @Post()
-  create(@Body() createPrescriptionDto: CreatePrescriptionDto) {
+  async create(@Body() createPrescriptionDto: CreatePrescriptionDto) {
     return this.prescriptionService.create(createPrescriptionDto);
   }
 
+  @Post("dispense/:id")
+  async dispense(@Param('id') id: string, @Body('isDispensed') isDispensed: boolean) {
+    // console.log(id, isDispensed)
+    
+    return await this.prescriptionService.dispense(id, isDispensed);
+  }
+
   @Get()
-  findAll(@Query() query : {stats:boolean; page: number; limit: number}) {
+  async findAll(@Query() query : {stats:boolean; page: number; limit: number}) {
     const {stats, page, limit} = query;
-    return this.prescriptionService.findAll(page || 1, limit || 10, stats);
+    return this.prescriptionService.findAll(page || 1, limit || 10, stats); 
   }
   
   @Get('search')
-  search(@Query() query : {text:string; page: number; limit: number}) {
+  async search(@Query() query : {text:string; page: number; limit: number}) {
     const {text, page, limit} = query;
     return this.prescriptionService.search(text, page || 1, limit || 10);
   }
 
   @Get('stats')
-  getStats(){
+  async getStats(){
     return this.prescriptionService.getStats();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.prescriptionService.findOne(id);
   }
 
@@ -44,4 +51,6 @@ export class PrescriptionController {
   remove(@Param('id') id: string) {
     return this.prescriptionService.remove(id);
   }
+
+  
 }

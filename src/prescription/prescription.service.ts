@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotAcceptableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Prescription } from './schemas/prescription.schema';
 import { Model } from 'mongoose';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+import { NotFoundError } from 'src/exceptions/exceptions';
+
 
 @Injectable()
 export class PrescriptionService {
@@ -85,9 +87,33 @@ export class PrescriptionService {
 
         return {dispensedPrescription, undispensedPrescription}
     }
+
+    async dispense(id:string, isDispensed: any): Promise<any>{
+
+      let isDispensedBoolean = JSON.parse(isDispensed.toLowerCase());
+
+      const pres = await this.prescriptionModel.findById(id).exec()
+
+      if (!pres) {
+        throw new NotFoundError ("Prescription not found")
+      } 
+
+      if(isDispensedBoolean === false) {
+        console.log("Hi")
+        throw new NotAcceptableException ("Unable to change dispensed state to false")
+      }
+
+      if ( pres.isDispensed && (isDispensedBoolean === true) ) {
+        // return {message: "Drugs already dispensed", statusCode: 406}
+        throw new NotAcceptableException ("Drugs already dispensed")
+      }
+
+      pres.isDispensed = isDispensedBoolean
+      pres.dispensedAt = new Date()
+      await pres.save();
+
+      return {message: `Precription ${pres.prescriptionId} fulfilled`, prescription: pres}
+    }
     
-    // async filterByStats(stats: boolean, limit: number, page: number){
-    //     return this.paginate({isDidpensed: stats}, page, limit)
-        
-    // }
+ 
 }

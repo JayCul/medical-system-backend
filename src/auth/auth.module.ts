@@ -7,6 +7,7 @@ import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './strategies/jwt.strategies';
 import { UserService } from 'src/user/user.service';
 import { LogoutGuard } from 'src/guards/logout.guard';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { LogoutGuard } from 'src/guards/logout.guard';
       secret: 'your-secret-key101',
       signOptions: { expiresIn: '1h' },
     }),
+
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LogoutGuard],

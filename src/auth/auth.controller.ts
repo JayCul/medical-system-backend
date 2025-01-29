@@ -19,7 +19,7 @@ export class AuthController {
 
   @Post('create')
   // @RequireRoles(Roles.Admin) // Ensure role restriction is specific to this route
-  create(@Body() createUserDto: CreateUserDto) {
+  async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
   
