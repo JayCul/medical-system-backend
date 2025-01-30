@@ -18,7 +18,6 @@ interface RedisConfig {
 @Injectable()
 export class AuthService {
 
-  // redisConfig = this.configService.get<RedisConfig>('REDIS');
   private redisClient = new Redis({ 
     port: this.getRedisConfig().PORT, // Redis port
     host: this.getRedisConfig().HOST, // Redis host
@@ -27,21 +26,8 @@ export class AuthService {
     db: 0, // Defaults to 0
   });
   
-  // private redisClient = new Redis({ 
-  //   port: this.REDIS_PORT, // Redis port
-  //   host: this.REDIS_HOST, // Redis host
-  //   username: this.REDIS_USERNAME, // needs Redis >= 6
-  //   password: this.REDIS_PASSWORD,
-  //   db: 0, // Defaults to 0
-  // });
-  
   getRedisConfig(): RedisConfig {
     const keys = {
-    //   port: parseInt(process.env.REDIS_PORT), // Redis port
-    //   host: process.env.REDIS_HOST, // Redis host
-    //   username: process.env.REDIS_USERNAME, // needs Redis >= 6
-    //   password: process.env.REDIS_PASSWORD,
-    // db: 0, // Defaults to 0
       PORT: parseInt(this.configService.get<string>('redisDB.port')), 
       HOST: this.configService.get<string>('redisDB.host'),
       USERNAME: this.configService.get<string>('redisDB.username'),
