@@ -17,11 +17,6 @@ interface RedisConfig {
 
 @Injectable()
 export class AuthService {
-//   REDIS_PORT = 14192
-// REDIS_HOST = "redis-14192.c14.us-east-1-3.ec2.redns.redis-cloud.com"
-// REDIS_USERNAME = "default"
-// REDIS_PASSWORD = "ePzejxgjvAfdLCcALB6jhoK6BxsC8EC6"
-  // private redisClient = new Redis();
 
   // redisConfig = this.configService.get<RedisConfig>('REDIS');
   private redisClient = new Redis({ 
@@ -39,8 +34,7 @@ export class AuthService {
   //   password: this.REDIS_PASSWORD,
   //   db: 0, // Defaults to 0
   // });
-  // private redisClient = new Redis("redis://default:*******@redis-14192.c14.us-east-1-3.ec2.redns.redis-cloud.com:14192");
-
+  
   getRedisConfig(): RedisConfig {
     const keys = {
     //   port: parseInt(process.env.REDIS_PORT), // Redis port
