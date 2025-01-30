@@ -8,10 +8,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // app.useGlobalGuards(new RolesGuard(new Reflector()));
   app.useGlobalFilters(new HttpErrorFilter())
-  app.enableCors({
-    origin: 'http://localhost:4200', // Adjust to your Angular app's URL
-    credentials: true,
-  });
+  app.enableCors();
+  // app.enableCors({
+  //   origin: 'http://localhost:4200', // Adjust to your Angular app's URL
+  //   credentials: true,
+  // });
   await app.listen(3000);
 }
 bootstrap();
