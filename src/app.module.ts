@@ -13,7 +13,7 @@ import { Connection } from 'mongoose';
 
 
 // const URL = "mongodb://127.0.0.1/medical_system"
-const URL = "mongodb+srv://jaystechub:dTOO010IqJgFU4sZx@jayscluster.usleh.mongodb.net/?retryWrites=true&w=majority&appName=JaysCluster"
+
 @Module({ 
   imports: [
     // MongooseModule.forRootAsync({
