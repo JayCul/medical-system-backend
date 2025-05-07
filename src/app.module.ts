@@ -8,23 +8,22 @@ import { PatientModule } from './patient/patient.module';
 import { DrugModule } from './drug/drug.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {redisDBConfig, jwtConfig} from './config/database.config';
+import { redisDBConfig, jwtConfig } from './config/database.config';
 import { Connection } from 'mongoose';
-
 
 // const URL = "mongodb://127.0.0.1/medical_system"
 
-@Module({ 
+@Module({
   imports: [
     // MongooseModule.forRootAsync({
-    //   imports: [ConfigModule], 
+    //   imports: [ConfigModule],
     //   inject: [ConfigService],
     //   useFactory: (configService: ConfigService) => ({
     //     uri: configService.get<string>('MONGO_URI'), // Use the MONGO_URI from the .env file
     //   }),
     // }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule], 
+      imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGO_URI'),
         onConnectionCreate: (connection: Connection) => {
@@ -33,29 +32,25 @@ import { Connection } from 'mongoose';
           connection.on('disconnected', () => console.log('disconnected'));
           connection.on('reconnected', () => console.log('reconnected'));
           connection.on('disconnecting', () => console.log('disconnecting'));
-      
+
           return connection;
         },
       }),
       inject: [ConfigService],
     }),
     // MongooseModule.forRoot(URL),
-    UserModule, // Add UserModule here
     AuthModule,
+    UserModule, // Add UserModule here
     PatientModule,
     PrescriptionModule,
     DrugModule,
     DashboardModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [redisDBConfig, jwtConfig]
-    })
+      load: [redisDBConfig, jwtConfig],
+    }),
   ],
-  controllers: [
-    
-  ],
-  providers: [
-    AppService, 
-  ],
+  controllers: [],
+  providers: [AppService],
 })
 export class AppModule {}
