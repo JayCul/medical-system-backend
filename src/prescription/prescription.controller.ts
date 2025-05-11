@@ -6,13 +6,18 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 @ApiTags('Prescription')
 @Controller('prescriptions')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@ApiBearerAuth('access-token')
 export class PrescriptionController {
   constructor(private readonly prescriptionService: PrescriptionService) {}
 
@@ -42,8 +47,14 @@ export class PrescriptionController {
   }
 
   @Get('search')
-  async search(@Query() query: { text: string; page: number; limit: number }) {
-    const { text, page, limit } = query;
+  @ApiQuery({ name: 'page', required: true, type: Number })
+  @ApiQuery({ name: 'page', required: true, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: true, type: Number, example: 10 })
+  async search(
+    @Query('text') text: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
     return this.prescriptionService.search(text, page || 1, limit || 10);
   }
 

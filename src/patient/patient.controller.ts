@@ -18,7 +18,7 @@ import { Roles } from 'src/auth/roles.enum';
 import { RequireRoles } from 'src/decorator/roles.decorator';
 import { CreatePrescriptionDto } from 'src/prescription/dto/create-prescription.dto';
 import { ObjectId } from 'typeorm';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { editLocationDto } from './dto/edit-location.dto';
 import { labResultDto } from './dto/lab-result.dto';
 import { prescribeDrugDto } from './dto/prescribe-drug.dto';
@@ -26,13 +26,19 @@ import { prescribeDrugDto } from './dto/prescribe-drug.dto';
 @ApiTags('Patient')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('patient')
+@ApiBearerAuth('access-token')
+
 // @RequireRoles(Roles.Admin, Roles.Doctor, Roles.Nurse)
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
   @Get()
-  async findAll(@Query() query: { page: number; limit: number }) {
-    const { page, limit } = query;
+  @ApiQuery({ name: 'page', required: true, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: true, type: Number, example: 10 })
+  async findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
     return this.patientService.findAll(page || 1, limit || 10);
   }
 

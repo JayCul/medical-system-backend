@@ -14,7 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
 import { LogoutGuard } from 'src/guards/logout.guard';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -39,6 +39,7 @@ export class AuthController {
 
   @UseGuards(LogoutGuard)
   @Get('logout')
+  @ApiBearerAuth('access-token')
   async logout(@Req() req: any) {
     const token = req.headers.authorization?.split(' ')[1];
     // console.log('Logout Executing')

@@ -19,13 +19,14 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { Roles } from 'src/auth/roles.enum';
 import { RequireRoles } from 'src/decorator/roles.decorator';
 import { EditUserDto } from './dto/edit-user.dto';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 // @RequireRoles(Roles.Admin) // Ensure role restriction is specific to this route
 // @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('User')
 @UseGuards(AuthGuard('jwt'))
 @Controller('user')
+@ApiBearerAuth('access-token')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -35,11 +36,14 @@ export class UserController {
   }
 
   @Get()
-  getAllUsers(
-    @Query() query: { page: number; limit: number; status?: boolean },
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'status', required: false, type: Boolean, example: true })
+  async getAllUsers(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('status') status: boolean = true,
   ) {
-    const { page, limit, status } = query;
-
     return this.userService.findAll(page, limit, status);
   }
 

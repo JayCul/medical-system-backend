@@ -13,19 +13,23 @@ import { DrugService } from './drug.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { DrugDto } from './dto/drug.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Drug')
 @UseGuards(AuthGuard('jwt'))
 @Controller('drug')
+@ApiBearerAuth('access-token')
 export class DrugController {
   constructor(private readonly drugService: DrugService) {}
 
   @Get('search-by-name')
+  @ApiQuery({ name: 'name', required: true, type: Number, example: 'Panadol' })
+  @ApiQuery({ name: 'page', required: true, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: true, type: Number, example: 10 })
   async searchDrugsbyName(
     @Query('name') name: string,
-    @Query('page') page: number,
-    @Query('limit') limit: number,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
   ) {
     return this.drugService.searchDrugsByName(name, page, limit);
   }
@@ -58,10 +62,12 @@ export class DrugController {
   }
 
   @Get()
-  async getAllDrugs(@Query() query?: { page?: number; limit?: number }) {
-    const { page, limit } = query;
-    // console.log(page, limit);
-
+  @ApiQuery({ name: 'page', required: true, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: true, type: Number, example: 10 })
+  async getAllDrugs(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
     return this.drugService.fetchDrugs(page, limit);
   }
 }
