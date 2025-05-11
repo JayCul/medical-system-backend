@@ -21,7 +21,7 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
       },
-      'Enter Access Token', // This name will be referenced below
+      // 'Enter Access Token', // This name will be referenced below (security specification)
     )
     .build();
 
