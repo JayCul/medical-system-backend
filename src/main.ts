@@ -18,7 +18,7 @@ async function bootstrap() {
     .addBearerAuth(
       {
         type: 'http',
-        scheme: 'Bearer',
+        scheme: 'bearer',
         bearerFormat: 'JWT',
       },
       'Enter Access Token', // This name will be referenced below
